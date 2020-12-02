@@ -163,6 +163,7 @@ login as an admin to edit a quiz.
             boxList.getItems().add(quizList.get(i).QuizTitle);
          }
     }
+    boxList.getSelectionModel().selectFirst();
 
     Button btnReturn = new Button();
       btnReturn.setText("Log out");
