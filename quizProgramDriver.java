@@ -1,16 +1,24 @@
 import javafx.application.*;
-import javafx.event.*;
+//import javafx.event.*; My compiler complains this isn't used, so it's just commented for now
 import javafx.scene.*;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.*;
 import javafx.scene.text.*;
+import java.util.*;
+import java.io.*;
+
 /**
 @author Margaret Nixon, Jordan Garnett, Xuchu Ma, Myles St. Pierre
 This class is the driver to a working prototype for an online quiz system.
 */
+
 public class quizProgramDriver extends Application {
-  public static void main(String[] args) {
+
+   ArrayList<Quiz> quizList = new ArrayList<Quiz>();
+   public static Stage pStage;
+
+   public static void main(String[] args) {
       launch(args);
   }
 
@@ -18,13 +26,29 @@ public class quizProgramDriver extends Application {
 This method runs the main screen where users can select to take a quiz, or
 login as an admin to edit a quiz.
 */
-  public void start(Stage primaryStage) {
+   public void start(Stage primaryStage) {
       primaryStage.setTitle("Quiz Program");
-      
+      pStage = primaryStage;
+
+      //load quizzes
+      try {
+         FileInputStream fi = new FileInputStream(new File("QuizStorage.txt"));
+         ObjectInputStream oi = new ObjectInputStream(fi);
+
+         quizList = (ArrayList<Quiz>) oi.readObject();
+         oi.close();
+         fi.close();
+      }
+      catch (FileNotFoundException ie) {
+      }
+      catch (IOException ie) {
+      }
+      catch (ClassNotFoundException ie){
+      }
       //create button to lead to admin login screen
       Button btnAdmin = new Button();
       btnAdmin.setLayoutY(200);
-      btnAdmin.setLayoutX(250);
+      btnAdmin.setLayoutX(235);
       btnAdmin.setPrefSize(120, 50);
       btnAdmin.setText("Go to Admin Login");
       btnAdmin.setOnAction(e -> {
@@ -35,7 +59,7 @@ login as an admin to edit a quiz.
       //create button to lead to user/player screen
       Button btnGoQuiz = new Button();
       btnGoQuiz.setLayoutY(100);
-      btnGoQuiz.setLayoutX(250);
+      btnGoQuiz.setLayoutX(235);
       btnGoQuiz.setPrefSize(120, 50);
       btnGoQuiz.setText("Do a quiz");
       btnGoQuiz.setOnAction(e -> goToQuizSelect_Click());
@@ -48,9 +72,8 @@ login as an admin to edit a quiz.
       primaryStage.setScene(scene);
       primaryStage.show();
   }
-  /*
-  This method opens the admin login.
-  */
+  
+  //This method opens the admin login.
   public void openLoginOn_Click() {
     
     Stage loginStage = new Stage();
@@ -93,52 +116,126 @@ login as an admin to edit a quiz.
             }
     }); 
 
+    Button btnReturn = new Button();
+      btnReturn.setText("Return");
+      btnReturn.setOnAction(e -> {
+            loginStage.close();
+            start(pStage);
+      });
+
     Pane root = new Pane();
-    root.getChildren().addAll(txtUser, txtPswrd, txtfUser, txtfPswrd, btnLogin, correct);
+    root.getChildren().addAll(txtUser, txtPswrd, txtfUser, txtfPswrd, btnLogin, correct, btnReturn);
    
     Scene loginScene = new Scene(root, 300, 275);
     loginStage.setScene(loginScene);
     loginStage.show();
   }
     
-   /**
-   This will open up the admin page to edit quizzes.
-   */
-  public void adminSettings() {
+   
+   //This will open up the admin page to manage quizzes and results.
+   public void adminSettings() {
     Stage adminStage = new Stage();
     adminStage.setTitle("Admin Settings");
     Text settingsDesc = new Text("Admin Settings:");
     settingsDesc.setLayoutY(20);
-    settingsDesc.setLayoutX(110);
+    settingsDesc.setLayoutX(100);
+    Text emptyCheck = new Text("");
+    emptyCheck.setLayoutY(110);
+    emptyCheck.setLayoutX(93);
     
     //Make a quiz button
     Button btnMakeQuiz = new Button();
     btnMakeQuiz.setLayoutY(40);
-    btnMakeQuiz.setLayoutX(100);
+    btnMakeQuiz.setLayoutX(85);
     btnMakeQuiz.setPrefSize(120, 50);
     btnMakeQuiz.setText("Create a quiz!");
     btnMakeQuiz.setOnAction(e -> {
             adminStage.close();
             makeQuiz_OnClick();
     });
+
+    //Make a view quiz button
+    ComboBox<String> boxList = new ComboBox<String>();
+    if(!quizList.isEmpty())
+    {
+         for(int i = 0; i < quizList.size(); i++)
+         {
+            boxList.getItems().add(quizList.get(i).QuizTitle);
+         }
+    }
+
+    Button btnReturn = new Button();
+      btnReturn.setText("Log out");
+      btnReturn.setOnAction(e -> {
+            adminStage.close();
+            start(pStage);
+      });
+
+    boxList.setLayoutY(100);
+    boxList.setLayoutX(40);
+    boxList.setPrefSize(170, 20);
+
+    Button btnViewQuiz = new Button();
+    btnViewQuiz.setLayoutY(100);
+    btnViewQuiz.setLayoutX(220);
+    btnViewQuiz.setPrefSize(60, 20);
+    btnViewQuiz.setText("View");
+    btnViewQuiz.setOnAction(e -> {
+           adminStage.close();
+           viewQuiz_OnClick(boxList.getValue());
+    });
+
+    //This button will save the quiz questions and return to main screen
+    Button btnSaveChanges = new Button();
+    btnSaveChanges.setLayoutY(220);
+    btnSaveChanges.setLayoutX(85);
+    btnSaveChanges.setPrefSize(120, 50);
+    btnSaveChanges.setText("Save Changes");
+    btnSaveChanges.setOnAction(e -> {
+         try {
+               FileOutputStream f = new FileOutputStream(new File("QuizStorage.txt"));
+               ObjectOutputStream o = new ObjectOutputStream(f);
+
+               o.writeObject(quizList);
+               o.close();
+         }
+         catch (FileNotFoundException ie) {
+         } 
+         catch (IOException ie) {
+         }
+         adminStage.close();
+         start(pStage);
+    });
       
     Pane root = new Pane();
-    root.getChildren().addAll(btnMakeQuiz, settingsDesc);
+    root.getChildren().addAll(btnReturn, btnMakeQuiz, settingsDesc, emptyCheck, btnSaveChanges);
+    if(!quizList.isEmpty())
+    {
+       root.getChildren().addAll(btnViewQuiz, boxList);
+    }
+    else
+      emptyCheck.setText("No quizzes loaded");
 
     Scene adminScene = new Scene(root, 300, 275);
     adminStage.setScene(adminScene);
     adminStage.show();
-  }
+   }
 
-  public void makeQuiz_OnClick() {
+   public void makeQuiz_OnClick() {
       Stage makeQuizStage = new Stage();
       makeQuizStage.setTitle("Quiz Creation");
       Text quizName = new Text("Insert name of quiz:");
       quizName.setLayoutY(20);
       quizName.setLayoutX(85);
+      Text checkName = new Text("");
+      checkName.setLayoutY(75);
+      checkName.setLayoutX(85);
       Text numOfQ = new Text("Insert number of questions:");
       numOfQ.setLayoutY(100);
       numOfQ.setLayoutX(85);
+      Text passOfQ = new Text("Set percentage to pass:");
+      passOfQ.setLayoutY(170);
+      passOfQ.setLayoutX(85);
       
       TextField quizfName = new TextField();
       quizfName.setLayoutY(35);
@@ -147,27 +244,45 @@ login as an admin to edit a quiz.
       Spinner<Integer> SnumOfQ = new Spinner<Integer>(1, 20, 1, 1);
       SnumOfQ.setLayoutY(120);
       SnumOfQ.setLayoutX(85);
+
+      Spinner<Integer> SnumPass = new Spinner<Integer>(1, 100, 50, 1);
+      SnumPass.setLayoutY(180);
+      SnumPass.setLayoutX(85);
       
       Button btnContinueQuiz = new Button();
-      btnContinueQuiz.setLayoutY(150);
+      btnContinueQuiz.setLayoutY(210);
       btnContinueQuiz.setLayoutX(85);
       btnContinueQuiz.setPrefSize(150, 30);
       btnContinueQuiz.setText("Begin making questions");
       btnContinueQuiz.setOnAction(e -> {
-            String title = quizfName.getText();
-            int rounds = SnumOfQ.getValue();
-            Quiz newQuiz = new Quiz(title, rounds);
-            makeQuizStage.close();
+            if(!quizfName.getText().equals(""))
+            {
+               String title = quizfName.getText();
+               int rounds = SnumOfQ.getValue();
+               int passPercent = SnumPass.getValue();
+               Quiz newQuiz = new Quiz(title, rounds, passPercent);
+               makeQuizStage.close();
             
-            for(int i = 1; i <= rounds; i++)
-               newQuiz.addQ(makeQuestion(i));
-              
-            //we will probably add newQuiz to a list of all quizzes here
-            adminSettings();
+               for(int i = 1; i <= rounds; i++)
+                  newQuiz.addQ(makeQuestion(i));
+
+               quizList.add(newQuiz);
+               adminSettings();
+            }
+            else
+               checkName.setText("Please give a name for the quiz!");
     });
+
+    Button btnReturn = new Button();
+      btnReturn.setText("Return");
+      btnReturn.setOnAction(e -> {
+            makeQuizStage.close();
+            adminSettings();
+      });
       
       Pane root = new Pane();
-      root.getChildren().addAll(quizName, numOfQ, quizfName, SnumOfQ, btnContinueQuiz);
+      root.getChildren().addAll(btnReturn, quizName, numOfQ, quizfName, 
+                                 SnumOfQ, SnumPass, passOfQ, btnContinueQuiz, checkName);
       
       Scene makeQuizScene = new Scene(root, 300, 250);
       makeQuizStage.setScene(makeQuizScene);
@@ -197,6 +312,10 @@ login as an admin to edit a quiz.
       Text correctTitle = new Text("Select Correct Answer:");
       correctTitle.setLayoutY(310);
       correctTitle.setLayoutX(85);
+      Text setQandA = new Text("");
+      setQandA.setLayoutY(410);
+      setQandA.setLayoutX(85);
+
       
       TextField questionQ = new TextField();
       questionQ.setLayoutY(35);
@@ -217,6 +336,7 @@ login as an admin to edit a quiz.
       
       ComboBox<Character> correctAns = new ComboBox<Character>();
       correctAns.getItems().addAll('A', 'B', 'C', 'D');
+      correctAns.setValue('A');
       correctAns.setLayoutY(320);
       correctAns.setLayoutX(85);
       
@@ -250,15 +370,21 @@ login as an admin to edit a quiz.
                      answer = 1;
                      break; 
                }
-               
-               newQuestion.makeQuestion(title, A, B, C, D, answer);
-               makeQuestionStage.close();
+               if(title.equals(""))
+               {
+                  setQandA.setText("Please enter a question!");
+               }
+               else
+               {
+                  newQuestion.makeQuestion(title, A, B, C, D, answer);
+                  makeQuestionStage.close();
+               }
       });
       
       Pane root = new Pane();
       root.getChildren().addAll(questionQtitle, answerAtitle, answerBtitle, answerCtitle, answerDtitle,
                              questionQ, answerA, answerB, answerC, answerD,
-                             btnContinueQuestion, correctAns, correctTitle);
+                             btnContinueQuestion, correctAns, correctTitle, setQandA);
       
       Scene makeQuestionScene = new Scene(root, 300, 500);
       makeQuestionStage.setScene(makeQuestionScene);
@@ -266,7 +392,80 @@ login as an admin to edit a quiz.
       return newQuestion;
   }
   
-  
+   public void viewQuiz_OnClick(String q) {
+      Stage viewQuizStage = new Stage();
+      viewQuizStage.setTitle("Quiz Viewer");
+      
+      int index = 0;
+      //finds which quiz was selected
+      //this may cause issues with identical named quizzesm should implement fix
+      for(int j = 0; j < quizList.size(); j++)
+         if(q.equals(quizList.get(j).QuizTitle))
+            index = j;
+
+      final int finalIndex = index;
+      
+      Text quizQuestion = new Text("Quiz name = " + quizList.get(index).QuizTitle);
+      quizQuestion.setLayoutX(280);
+      quizQuestion.setLayoutY(20);
+
+      Text passPercentage = new Text("Pass Percentage = " + quizList.get(index).passPercent + "%");
+      passPercentage.setLayoutX(550);
+      passPercentage.setLayoutY(20);
+
+      Text[] temp = new Text[quizList.get(index).list.size()];
+      int x = 20;
+      int y = 40;
+      for(int k = 0; k < quizList.get(index).list.size(); k++)
+      {
+         temp[k] = new Text(k+1 + ". " + quizList.get(index).list.get(k).questionTitle);
+         temp[k].setLayoutX(x);
+         temp[k].setLayoutY(y);
+         if(k == 9)
+         {
+            x = 350;
+            y = 20;
+         }
+         y += 20;
+      }
+
+      Button btnDeleteButton = new Button();
+      btnDeleteButton.setLayoutX(20);
+      btnDeleteButton.setLayoutY(260);
+      btnDeleteButton.setPrefSize(150, 30);
+      btnDeleteButton.setText("Delete Quiz?");
+            btnDeleteButton.setOnAction(e -> {
+            quizList.remove(finalIndex);
+            viewQuizStage.close();
+            adminSettings();
+      });
+
+      Button btnReturn = new Button();
+      btnReturn.setText("Return");
+      btnReturn.setOnAction(e -> {
+            viewQuizStage.close();
+            adminSettings();
+      });
+
+
+      Pane root = new Pane();
+      for(int i = 0; i < temp.length; i++)
+         root.getChildren().add(temp[i]);
+      
+      root.getChildren().addAll(btnDeleteButton, btnReturn, quizQuestion, passPercentage);
+
+      Scene viewQuizScene = new Scene(root, 700, 300);
+      viewQuizStage.setScene(viewQuizScene);
+      viewQuizStage.show();
+   }
+
+
+
+
+
+
+
+
   //Unfinished regular user screens are below this point
   
   
@@ -274,7 +473,7 @@ login as an admin to edit a quiz.
   /*
   This goes to waiting screen for quiz.
   */
-  public void goToQuizSelect_Click() {
+   public void goToQuizSelect_Click() {
     Stage waitStage = new Stage();
     waitStage.setTitle("Waiting for Admin");
     Text txtWait = new Text("Please Wait for Quiz to Start");
@@ -330,9 +529,9 @@ This starts the quiz.
   public void checkScoreOn_Click(int ansNumb) {
     //get right answer from server, temporarily hard-coded /////////////////////////////////
     int realAns = 2;
-    boolean ansRight = false;
+    //boolean ansRight = false;
     if (realAns == ansNumb) {
-      ansRight = true;
+     // ansRight = true;
     }
     //send score somehow, then receive scores for everyone as a string/////////////////////
     String allScores = "This will be everyones score"; /////////////while scores are displayed, next question should open back on quizStage

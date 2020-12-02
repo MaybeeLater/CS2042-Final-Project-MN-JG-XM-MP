@@ -1,16 +1,17 @@
+import java.io.Serializable;
 import java.util.*;
 
-public class Quiz
+public class Quiz implements Serializable
 {
    String QuizTitle;
-   int rounds;
+   int rounds, passPercent, index;
    ArrayList<Question> list = new ArrayList<Question>();
    
-   public Quiz(String title, int rounds)
+   public Quiz(String title, int rounds, int passPercent)
    {
       this.QuizTitle = title;
       this.rounds = rounds;
-      ArrayList<Question> list = new ArrayList<Question>();
+      this.passPercent = passPercent;
    }
    
    public void addQ(Question question)

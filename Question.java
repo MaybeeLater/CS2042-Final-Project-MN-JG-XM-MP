@@ -1,4 +1,5 @@
-public class Question
+import java.io.Serializable;
+public class Question implements Serializable
 {
    String questionTitle, A, B, C, D;
    int correct;
