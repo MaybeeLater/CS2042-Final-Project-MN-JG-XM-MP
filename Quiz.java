@@ -4,14 +4,15 @@ import java.util.*;
 public class Quiz implements Serializable
 {
    String QuizTitle;
-   int rounds, passPercent, index;
+   int rounds, passNumber, numTeams;
    ArrayList<Question> list = new ArrayList<Question>();
    
-   public Quiz(String title, int rounds, int passPercent)
+   public Quiz(String title, int rounds, int passNumber, int numTeams)
    {
       this.QuizTitle = title;
       this.rounds = rounds;
-      this.passPercent = passPercent;
+      this.passNumber = passNumber;
+      this.numTeams = numTeams;
    }
    
    public void addQ(Question question)
